@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Punjab Police — Computer Digital Forensics</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #060a10;
+    --surface: #0c1520;
+    --surface2: #101e2e;
+    --border: #1a3050;
+    --accent: #00aaff;
+    --accent2: #0055cc;
+    --gold: #f5c518;
+    --danger: #ff3b3b;
+    --text: #c8ddf0;
+    --text-dim: #5a7a99;
+    --mono: 'Share Tech Mono', monospace;
+    --head: 'Rajdhani', sans-serif;
+    --body: 'Exo 2', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    overflow-x: hidden;
+    cursor: default;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* Grid noise bg */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,170,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,170,255,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ─── NAV ─── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 1000;
+    background: rgba(6,10,16,0.85);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 3rem;
+    height: 68px;
+  }
+
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    text-decoration: none;
+  }
+
+  .nav-emblem {
+    width: 40px;
+    height: 40px;
+    position: relative;
+  }
+
+  .nav-emblem svg { width: 40px; height: 40px; }
+
+  .nav-brand-text { font-family: var(--head); }
+  .nav-brand-text .top { font-size: 0.65rem; letter-spacing: 0.25em; color: var(--gold); text-transform: uppercase; }
+  .nav-brand-text .bot { font-size: 1.1rem; font-weight: 700; color: var(--text); letter-spacing: 0.05em; }
+
+  .nav-links { display: flex; gap: 2rem; list-style: none; }
+  .nav-links a {
+    font-family: var(--head);
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--text-dim);
+    transition: color 0.2s;
+    position: relative;
+  }
+  .nav-links a::after {
+    content: '';
+    position: absolute;
+    bottom: -4px; left: 0; right: 0;
+    height: 1px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transition: transform 0.2s;
+  }
+  .nav-links a:hover { color: var(--accent); }
+  .nav-links a:hover::after { transform: scaleX(1); }
+
+  .nav-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: #00ff88;
+  }
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #00ff88;
+    box-shadow: 0 0 6px #00ff88;
+    animation: pulse-dot 2s infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* ─── HERO ─── */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    padding: 100px 3rem 3rem;
+    overflow: hidden;
+    z-index: 1;
+  }
+
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 70% 50%, rgba(0,85,204,0.18) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 40% at 20% 80%, rgba(0,170,255,0.08) 0%, transparent 60%);
+    z-index: 0;
+  }
+
+  .hero-circuit {
+    position: absolute;
+    right: 0; top: 0; bottom: 0;
+    width: 55%;
+    opacity: 0.12;
+    z-index: 0;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 640px;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0,170,255,0.08);
+    border: 1px solid rgba(0,170,255,0.25);
+    border-radius: 2px;
+    padding: 6px 14px;
+    margin-bottom: 2rem;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    animation: fadeUp 0.8s ease both;
+  }
+
+  .hero h1 {
+    font-family: var(--head);
+    font-size: clamp(2.8rem, 6vw, 5rem);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: 0.02em;
+    color: #fff;
+    animation: fadeUp 0.8s 0.15s ease both;
+  }
+
+  .hero h1 span {
+    color: var(--accent);
+    display: block;
+  }
+
+  .hero-sub {
+    margin-top: 1.5rem;
+    font-size: 1rem;
+    color: var(--text-dim);
+    line-height: 1.7;
+    max-width: 480px;
+    animation: fadeUp 0.8s 0.3s ease both;
+  }
+
+  .hero-stats {
+    display: flex;
+    gap: 2.5rem;
+    margin-top: 3rem;
+    animation: fadeUp 0.8s 0.45s ease both;
+  }
+
+  .stat {
+    border-left: 2px solid var(--accent);
+    padding-left: 1rem;
+  }
+
+  .stat-num {
+    font-family: var(--mono);
+    font-size: 1.8rem;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2.5rem;
+    animation: fadeUp 0.8s 0.6s ease both;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent);
+    color: #000;
+    font-family: var(--head);
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-decoration: none;
+    padding: 0.8rem 1.8rem;
+    border: none;
+    cursor: pointer;
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+    transition: background 0.2s, transform 0.15s;
+  }
+
+  .btn-primary:hover { background: #33bbff; transform: translateY(-2px); }
+
+  .btn-outline {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    color: var(--text);
+    font-family: var(--head);
+    font-weight: 600;
+    font-size: 0.85rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-decoration: none;
+    padding: 0.8rem 1.8rem;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s, transform 0.15s;
+  }
+
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); }
+
+  .hero-terminal {
+    position: absolute;
+    right: 5%; top: 50%;
+    transform: translateY(-50%);
+    width: 380px;
+    background: rgba(12,21,32,0.9);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    z-index: 2;
+    animation: fadeLeft 1s 0.3s ease both;
+    box-shadow: 0 0 40px rgba(0,85,204,0.2), 0 0 80px rgba(0,85,204,0.1);
+  }
+
+  .terminal-bar {
+    background: var(--surface2);
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .terminal-dots { display: flex; gap: 6px; }
+  .terminal-dots span { width: 10px; height: 10px; border-radius: 50%; }
+  .terminal-dots span:nth-child(1) { background: #ff5f56; }
+  .terminal-dots span:nth-child(2) { background: #ffbd2e; }
+  .terminal-dots span:nth-child(3) { background: #27c93f; }
+
+  .terminal-title {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    flex: 1;
+    text-align: center;
+  }
+
+  .terminal-body {
+    padding: 16px;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    line-height: 1.9;
+  }
+
+  .t-line { display: flex; gap: 8px; }
+  .t-prompt { color: var(--accent); }
+  .t-cmd { color: #c8ddf0; }
+  .t-out { color: #5a7a99; padding-left: 16px; }
+  .t-out.success { color: #00ff88; }
+  .t-out.warn { color: var(--gold); }
+  .t-cursor {
+    display: inline-block;
+    width: 8px; height: 14px;
+    background: var(--accent);
+    vertical-align: bottom;
+    animation: blink 1s infinite;
+  }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeLeft {
+    from { opacity: 0; transform: translateY(-50%) translateX(40px); }
+    to { opacity: 1; transform: translateY(-50%) translateX(0); }
+  }
+
+  /* ─── SECTION SHARED ─── */
+  section { position: relative; z-index: 1; }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 0.8rem;
+  }
+
+  .section-title {
+    font-family: var(--head);
+    font-size: clamp(1.8rem, 3vw, 2.6rem);
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.03em;
+    line-height: 1.15;
+    margin-bottom: 1rem;
+  }
+
+  .section-desc {
+    color: var(--text-dim);
+    font-size: 0.95rem;
+    line-height: 1.7;
+    max-width: 560px;
+  }
+
+  .divider {
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+    margin: 1.2rem 0;
+  }
+
+  /* ─── CAPABILITIES ─── */
+  .capabilities {
+    padding: 6rem 3rem;
+    background: linear-gradient(180deg, var(--bg) 0%, var(--surface) 100%);
+  }
+
+  .cap-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5px;
+    margin-top: 3.5rem;
+    background: var(--border);
+  }
+
+  .cap-card {
+    background: var(--surface);
+    padding: 2rem;
+    transition: background 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cap-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s;
+  }
+
+  .cap-card:hover { background: var(--surface2); }
+  .cap-card:hover::before { transform: scaleX(1); }
+
+  .cap-icon {
+    width: 48px; height: 48px;
+    margin-bottom: 1.2rem;
+    color: var(--accent);
+  }
+
+  .cap-num {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    letter-spacing: 0.15em;
+    margin-bottom: 0.6rem;
+  }
+
+  .cap-card h3 {
+    font-family: var(--head);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.6rem;
+  }
+
+  .cap-card p {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    line-height: 1.65;
+  }
+
+  /* ─── PROCESS ─── */
+  .process {
+    padding: 6rem 3rem;
+  }
+
+  .process-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5rem;
+    align-items: start;
+    margin-top: 3.5rem;
+  }
+
+  .process-steps { display: flex; flex-direction: column; gap: 0; }
+
+  .step {
+    display: grid;
+    grid-template-columns: 60px 1fr;
+    gap: 1.5rem;
+    position: relative;
+    padding-bottom: 2.5rem;
+  }
+
+  .step:last-child { padding-bottom: 0; }
+
+  .step-num-col { display: flex; flex-direction: column; align-items: center; }
+
+  .step-num {
+    width: 44px; height: 44px;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--accent);
+    flex-shrink: 0;
+    background: var(--surface);
+    clip-path: polygon(15% 0%, 85% 0%, 100% 15%, 100% 85%, 85% 100%, 15% 100%, 0% 85%, 0% 15%);
+    transition: background 0.25s;
+  }
+
+  .step:hover .step-num { background: rgba(0,170,255,0.1); }
+
+  .step-line {
+    flex: 1;
+    width: 1px;
+    background: linear-gradient(180deg, var(--border), transparent);
+    margin-top: 8px;
+  }
+
+  .step:last-child .step-line { display: none; }
+
+  .step-content { padding-top: 8px; }
+
+  .step-content h4 {
+    font-family: var(--head);
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.4rem;
+  }
+
+  .step-content p {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    line-height: 1.65;
+  }
+
+  .process-visual {
+    position: sticky;
+    top: 100px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 2rem;
+  }
+
+  .pv-header {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pv-header::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #00ff88;
+    box-shadow: 0 0 6px #00ff88;
+  }
+
+  .evidence-chain { display: flex; flex-direction: column; gap: 0.5rem; }
+
+  .ev-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.8rem 1rem;
+    background: rgba(0,170,255,0.04);
+    border-left: 2px solid transparent;
+    font-size: 0.82rem;
+    transition: border-color 0.2s, background 0.2s;
+    cursor: default;
+  }
+
+  .ev-item:hover { border-color: var(--accent); background: rgba(0,170,255,0.08); }
+
+  .ev-icon { color: var(--accent); flex-shrink: 0; }
+
+  .ev-label { color: var(--text); flex: 1; font-family: var(--head); font-weight: 600; font-size: 0.9rem; }
+
+  .ev-tag {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    color: var(--text-dim);
+    background: rgba(255,255,255,0.05);
+    padding: 2px 8px;
+    border-radius: 2px;
+  }
+
+  /* ─── TOOLS TICKER ─── */
+  .tools-section {
+    padding: 3rem 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .ticker-label {
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+  }
+
+  .ticker-wrap { overflow: hidden; }
+
+  .ticker {
+    display: flex;
+    gap: 3rem;
+    animation: ticker-scroll 30s linear infinite;
+    width: max-content;
+  }
+
+  @keyframes ticker-scroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  .ticker-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--head);
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    white-space: nowrap;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+
+  .ticker-item svg { color: var(--accent); opacity: 0.7; }
+
+  .ticker-sep {
+    width: 3px; height: 3px;
+    background: var(--border);
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ─── CERTIFICATIONS ─── */
+  .certs {
+    padding: 6rem 3rem;
+    background: linear-gradient(180deg, var(--surface) 0%, var(--bg) 100%);
+  }
+
+  .cert-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-top: 3.5rem;
+  }
+
+  .cert-card {
+    border: 1px solid var(--border);
+    padding: 1.5rem;
+    text-align: center;
+    transition: border-color 0.25s, transform 0.25s;
+    background: var(--surface);
+    position: relative;
+  }
+
+  .cert-card:hover { border-color: var(--accent); transform: translateY(-4px); }
+
+  .cert-icon {
+    width: 48px; height: 48px;
+    margin: 0 auto 1rem;
+    color: var(--gold);
+  }
+
+  .cert-card h4 {
+    font-family: var(--head);
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.3rem;
+  }
+
+  .cert-card p {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+
+  /* ─── ALERT BANNER ─── */
+  .alert-banner {
+    background: rgba(255,59,59,0.06);
+    border: 1px solid rgba(255,59,59,0.25);
+    padding: 1rem 3rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+  }
+
+  .alert-tag {
+    background: var(--danger);
+    color: #fff;
+    font-family: var(--head);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    padding: 4px 10px;
+    flex-shrink: 0;
+  }
+
+  .alert-text { color: var(--text-dim); flex: 1; }
+  .alert-text strong { color: var(--text); }
+
+  .alert-hotline {
+    font-family: var(--head);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--danger);
+    letter-spacing: 0.1em;
+  }
+
+  /* ─── CONTACT ─── */
+  .contact {
+    padding: 6rem 3rem;
+    background: var(--surface);
+  }
+
+  .contact-inner {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 5rem;
+    margin-top: 3.5rem;
+  }
+
+  .contact-info { display: flex; flex-direction: column; gap: 2rem; }
+
+  .info-block {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .info-icon {
+    width: 44px; height: 44px;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+    flex-shrink: 0;
+    background: rgba(0,170,255,0.05);
+  }
+
+  .info-block h5 {
+    font-family: var(--head);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+
+  .info-block p, .info-block a {
+    font-size: 0.95rem;
+    color: var(--text);
+    text-decoration: none;
+    line-height: 1.6;
+    display: block;
+  }
+
+  .info-block a:hover { color: var(--accent); }
+
+  .contact-map {
+    border: 1px solid var(--border);
+    background: rgba(0,170,255,0.03);
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .map-header {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .map-placeholder {
+    width: 100%;
+    height: 160px;
+    background:
+      linear-gradient(rgba(0,170,255,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,170,255,0.05) 1px, transparent 1px);
+    background-size: 20px 20px;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .map-pin {
+    width: 12px; height: 12px;
+    background: var(--danger);
+    border-radius: 50%;
+    box-shadow: 0 0 20px var(--danger), 0 0 40px rgba(255,59,59,0.4);
+    animation: pulse-dot 1.5s infinite;
+  }
+
+  /* ─── FORM ─── */
+  .contact-form { display: flex; flex-direction: column; gap: 1rem; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+
+  .form-group label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--body);
+    font-size: 0.9rem;
+    padding: 0.75rem 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+    -webkit-appearance: none;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px rgba(0,170,255,0.2);
+  }
+
+  .form-group textarea { resize: vertical; min-height: 120px; }
+
+  .form-group select option { background: var(--surface); }
+
+  .form-note {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .form-note svg { color: var(--gold); flex-shrink: 0; }
+
+  .submit-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: var(--accent);
+    color: #000;
+    font-family: var(--head);
+    font-weight: 700;
+    font-size: 0.9rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    border: none;
+    padding: 1rem 2rem;
+    cursor: pointer;
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+    transition: background 0.2s, transform 0.15s;
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+
+  .submit-btn:hover { background: #33bbff; transform: translateY(-2px); }
+
+  /* ─── FOOTER ─── */
+  footer {
+    background: #030609;
+    border-top: 1px solid var(--border);
+    padding: 3rem;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 2rem;
+    align-items: center;
+  }
+
+  .footer-left p {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    line-height: 1.7;
+    max-width: 420px;
+  }
+
+  .footer-left .footer-brand {
+    font-family: var(--head);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .footer-brand-dot { width: 6px; height: 6px; background: var(--gold); flex-shrink: 0; }
+
+  .footer-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+  }
+
+  .footer-right p {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 1.5rem;
+    list-style: none;
+    margin-top: 0.5rem;
+  }
+
+  .footer-links a {
+    font-family: var(--head);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .footer-links a:hover { color: var(--accent); }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 1000px) {
+    .hero-terminal { display: none; }
+    .cap-grid { grid-template-columns: repeat(2, 1fr); }
+    .cert-grid { grid-template-columns: repeat(2, 1fr); }
+    .contact-inner { grid-template-columns: 1fr; }
+    .process-inner { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 700px) {
+    nav { padding: 0 1.5rem; }
+    .nav-links { display: none; }
+    .hero { padding: 90px 1.5rem 3rem; }
+    .hero-stats { flex-wrap: wrap; gap: 1.5rem; }
+    .cap-grid { grid-template-columns: 1fr; }
+    .cert-grid { grid-template-columns: 1fr 1fr; }
+    .form-row { grid-template-columns: 1fr; }
+    .capabilities, .process, .certs, .contact { padding: 4rem 1.5rem; }
+    .alert-banner { flex-direction: column; gap: 0.8rem; padding: 1.2rem 1.5rem; }
+    footer { grid-template-columns: 1fr; }
+    .footer-right { align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-brand" href="#">
+    <div class="nav-emblem">
+      <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="20,2 38,12 38,28 20,38 2,28 2,12" fill="none" stroke="#00aaff" stroke-width="1.5"/>
+        <polygon points="20,7 33,14 33,26 20,33 7,26 7,14" fill="rgba(0,85,204,0.2)" stroke="#0055cc" stroke-width="1"/>
+        <circle cx="20" cy="20" r="5" fill="#f5c518"/>
+        <text x="20" y="23.5" text-anchor="middle" font-size="6" font-family="Rajdhani" fill="#00aaff" font-weight="700">PP</text>
+      </svg>
+    </div>
+    <div class="nav-brand-text">
+      <div class="top">Punjab Police</div>
+      <div class="bot">Digital Forensics</div>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#capabilities">Capabilities</a></li>
+    <li><a href="#process">Process</a></li>
+    <li><a href="#certifications">Certifications</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <div class="nav-status">
+    <span class="status-dot"></span>
+    SYSTEM ONLINE
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <!-- Circuit SVG background -->
+  <svg class="hero-circuit" viewBox="0 0 600 700" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <line x1="100" y1="0" x2="100" y2="700" stroke="#00aaff" stroke-width="0.5"/>
+    <line x1="250" y1="0" x2="250" y2="700" stroke="#00aaff" stroke-width="0.5"/>
+    <line x1="400" y1="0" x2="400" y2="700" stroke="#00aaff" stroke-width="0.5"/>
+    <line x1="0" y1="150" x2="600" y2="150" stroke="#00aaff" stroke-width="0.5"/>
+    <line x1="0" y1="300" x2="600" y2="300" stroke="#00aaff" stroke-width="0.5"/>
+    <line x1="0" y1="500" x2="600" y2="500" stroke="#00aaff" stroke-width="0.5"/>
+    <circle cx="100" cy="150" r="4" fill="none" stroke="#00aaff" stroke-width="1"/>
+    <circle cx="250" cy="300" r="4" fill="none" stroke="#00aaff" stroke-width="1"/>
+    <circle cx="400" cy="150" r="6" fill="rgba(0,170,255,0.3)" stroke="#00aaff" stroke-width="1"/>
+    <circle cx="100" cy="500" r="4" fill="none" stroke="#00aaff" stroke-width="1"/>
+    <circle cx="400" cy="500" r="4" fill="none" stroke="#00aaff" stroke-width="1"/>
+    <rect x="220" y="270" width="60" height="60" fill="none" stroke="#0055cc" stroke-width="1"/>
+    <rect x="370" y="120" width="60" height="60" fill="rgba(0,85,204,0.15)" stroke="#0055cc" stroke-width="1"/>
+    <path d="M100 150 L250 150 L250 300" stroke="#0055cc" stroke-width="1.5" stroke-dasharray="6 4"/>
+    <path d="M400 150 L400 300 L250 300" stroke="#0055cc" stroke-width="1.5" stroke-dasharray="6 4"/>
+    <path d="M100 500 L250 500 L250 300" stroke="#0055cc" stroke-width="1" stroke-dasharray="4 6"/>
+    <path d="M400 500 L400 300" stroke="#0055cc" stroke-width="1" stroke-dasharray="4 6"/>
+  </svg>
+
+  <div class="hero-content">
+    <div class="hero-badge">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="4" stroke="currentColor" stroke-width="1.5"/><circle cx="5" cy="5" r="1.5" fill="currentColor"/></svg>
+      Punjab Police · Cyber Cell Division
+    </div>
+    <h1>Computer Digital<span>Forensics Unit</span></h1>
+    <p class="hero-sub">
+      Specialized in cybercrime investigation, digital evidence recovery, and forensic analysis — safeguarding the digital frontier of Punjab.
+    </p>
+    <div class="hero-stats">
+      <div class="stat">
+        <div class="stat-num">1200+</div>
+        <div class="stat-label">Cases Solved</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">98.4%</div>
+        <div class="stat-label">Evidence Integrity</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">24/7</div>
+        <div class="stat-label">Response Ready</div>
+      </div>
+    </div>
+    <div class="hero-actions">
+      <a href="#contact" class="btn-primary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6 6l.96-.95a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        Report an Incident
+      </a>
+      <a href="#capabilities" class="btn-outline">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        Our Capabilities
+      </a>
+    </div>
+  </div>
+
+  <!-- Terminal -->
+  <div class="hero-terminal">
+    <div class="terminal-bar">
+      <div class="terminal-dots"><span></span><span></span><span></span></div>
+      <div class="terminal-title">forensics@punjabpolice:~$</div>
+    </div>
+    <div class="terminal-body">
+      <div class="t-line"><span class="t-prompt">$</span><span class="t-cmd">sudo init-forensics --case CYB2025-1847</span></div>
+      <div class="t-line"><span class="t-out success">✔ Secure evidence environment initialized</span></div>
+      <div class="t-line"><span class="t-out">Case hash: SHA-256 verified</span></div>
+      <br>
+      <div class="t-line"><span class="t-prompt">$</span><span class="t-cmd">scan --device "USB_DRIVE_01" --mode deep</span></div>
+      <div class="t-line"><span class="t-out warn">⚠ 3,847 artifacts flagged for review</span></div>
+      <div class="t-line"><span class="t-out success">✔ Chain of custody logged</span></div>
+      <br>
+      <div class="t-line"><span class="t-prompt">$</span><span class="t-cmd">extract --recover deleted --output ./evidence/</span></div>
+      <div class="t-line"><span class="t-out success">✔ 1,204 files recovered successfully</span></div>
+      <div class="t-line"><span class="t-out">Integrity check: PASS</span></div>
+      <br>
+      <div class="t-line"><span class="t-prompt">$</span><span class="t-cmd">generate-report --format court-admissible</span></div>
+      <div class="t-line"><span class="t-out">Compiling forensic report...<span class="t-cursor"></span></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ALERT BANNER -->
+<div class="alert-banner">
+  <span class="alert-tag">URGENT</span>
+  <span class="alert-text">To report <strong>cybercrime, online fraud, or digital harassment</strong>, contact the Punjab Cyber Helpline immediately</span>
+  <span class="alert-hotline">1930 &nbsp;|&nbsp; 112</span>
+</div>
+
+<!-- CAPABILITIES -->
+<section class="capabilities" id="capabilities">
+  <div class="section-label">// CORE CAPABILITIES</div>
+  <div class="section-title">Digital Forensics<br>Specializations</div>
+  <div class="divider"></div>
+  <p class="section-desc">Our trained officers employ cutting-edge forensic tools and methodologies to investigate, recover, and preserve digital evidence for legal proceedings.</p>
+
+  <div class="cap-grid">
+    <div class="cap-card">
+      <svg class="cap-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      <div class="cap-num">01 / COMPUTE</div>
+      <h3>Computer Forensics</h3>
+      <p>Full disk imaging, deleted file recovery, registry analysis, and metadata extraction from Windows, Linux, and macOS systems.</p>
+    </div>
+    <div class="cap-card">
+      <svg class="cap-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
+      <div class="cap-num">02 / MOBILE</div>
+      <h3>Mobile Device Analysis</h3>
+      <p>Extraction of SMS, call records, app data, geolocation history, and encrypted messaging from Android and iOS devices.</p>
+    </div>
+    <div class="cap-card">
+      <svg class="cap-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      <div class="cap-num">03 / NETWORK</div>
+      <h3>Network Forensics</h3>
+      <p>Traffic capture and analysis, intrusion detection, IP tracing, dark-web investigation, and ISP coordination for cybercrime cases.</p>
+    </div>
+    <div class="cap-card">
+      <svg class="cap-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <div class="cap-num">04 / MALWARE</div>
+      <h3>Malware & Ransomware</h3>
+      <p>Malware reverse engineering, ransomware decryption, threat actor attribution, and incident containment for public and private entities.</p>
+    </div>
+    <div class="cap-card">
+      <svg class="cap-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      <div class="cap-num">05 / MEDIA</div>
+      <h3>Digital Media Analysis</h3>
+      <p>Image/video authentication, deepfake detection, metadata forensics, and audio enhancement for evidentiary purposes.</p>
+    </div>
+    <div class="cap-card">
+      <svg class="cap-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <div class="cap-num">06 / SOCIAL</div>
+      <h3>Social Media & OSINT</h3>
+      <p>Open-source intelligence gathering, fake profile investigation, online harassment tracking, and social media evidence preservation.</p>
+    </div>
+  </div>
+</section>
+
+<!-- TOOLS TICKER -->
+<div class="tools-section">
+  <div class="ticker-label">// Certified Forensic Tools & Platforms</div>
+  <div class="ticker-wrap">
+    <div class="ticker">
+      <!-- First set -->
+      <div class="ticker-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/></svg>Cellebrite UFED</div>
+      <div class="ticker-sep"></div>
+      <div class="ticker-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/></svg>Autopsy</div>
+      <div class="ticker-sep"></div>
+      <div class="ticker-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/></svg>EnCase Forensics</div>
+      <div class="ticker-sep"></div>
+      <div class="ticker-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/></svg>FTK — Forensic Toolkit</div>
+      <div class="ticker-sep"></div>
+      <div class="ticker-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/></svg>Oxygen Forensics</div>
+      <div class="ticker-sep"></div>
+      <div class="ticker-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/></svg>Wireshark</div>
+      <div class="ticker-sep"></div>
+      <div class="ticker-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/></svg>Volatility Framework</div>
+      <div class="ticker-sep"></div>
+      <div class="ticker-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/></svg>SIFT Workstation</div>
+      <div class="ticker-sep"></div>
+      <div class="ticker-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/></svg>Maltego</div>
+      <div class="ticker-sep"></div>
+      <div class="ticker-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/></svg>X-Ways Forensics</div>
+      <div class="ticker-sep"></div>
+      <!-- Second set (duplicate for seamless loop) -->
+      <div class="ticker-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/></svg>Cellebrite UFED</div>
+      <div class="ticker-sep"></div>
+      <div class="ticker-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/></svg>Autopsy</div>
+      <div class="ticker-sep"></div>
+      <div class="ticker-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/></svg>EnCase Forensics</div>
+      <div class="ticker-sep"></div>
+      <div class="ticker-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/></svg>FTK — Forensic Toolkit</div>
+      <div class="ticker-sep"></div>
+      <div class="ticker-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/></svg>Oxygen Forensics</div>
+      <div class="ticker-sep"></div>
+      <div class="ticker-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/></svg>Wireshark</div>
+      <div class="ticker-sep"></div>
+      <div class="ticker-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/></svg>Volatility Framework</div>
+      <div class="ticker-sep"></div>
+      <div class="ticker-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/></svg>SIFT Workstation</div>
+      <div class="ticker-sep"></div>
+      <div class="ticker-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/></svg>Maltego</div>
+      <div class="ticker-sep"></div>
+      <div class="ticker-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/></svg>X-Ways Forensics</div>
+    </div>
+  </div>
+</div>
+
+<!-- PROCESS -->
+<section class="process" id="process">
+  <div class="section-label">// INVESTIGATION PROTOCOL</div>
+  <div class="section-title">Forensic Investigation<br>Methodology</div>
+  <div class="divider"></div>
+  <p class="section-desc">Every digital investigation follows a court-admissible protocol ensuring evidence integrity and chain of custody.</p>
+
+  <div class="process-inner">
+    <div class="process-steps">
+      <div class="step">
+        <div class="step-num-col"><div class="step-num">01</div><div class="step-line"></div></div>
+        <div class="step-content">
+          <h4>Incident Receipt & Triage</h4>
+          <p>Complaint registered, severity assessed, and initial digital footprint mapped. Emergency preservation notices issued if necessary.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num-col"><div class="step-num">02</div><div class="step-line"></div></div>
+        <div class="step-content">
+          <h4>Scene Securing & Identification</h4>
+          <p>Digital crime scene secured. All devices identified, photographed, documented, and prevented from data alteration or remote wipe.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num-col"><div class="step-num">03</div><div class="step-line"></div></div>
+        <div class="step-content">
+          <h4>Evidence Collection & Imaging</h4>
+          <p>Bit-for-bit forensic images created using write-blockers. Hash values recorded for integrity verification throughout the process.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num-col"><div class="step-num">04</div><div class="step-line"></div></div>
+        <div class="step-content">
+          <h4>Analysis & Examination</h4>
+          <p>Deep analysis of images using certified tools. Deleted data recovery, timeline reconstruction, and artifact correlation performed.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num-col"><div class="step-num">05</div><div class="step-line"></div></div>
+        <div class="step-content">
+          <h4>Reporting & Court Testimony</h4>
+          <p>Comprehensive forensic report prepared per legal standards. Officers provide expert testimony and evidence presentation in court.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="process-visual">
+      <div class="pv-header">ACTIVE EVIDENCE CHAIN — CASE #2025-1847</div>
+      <div class="evidence-chain">
+        <div class="ev-item">
+          <svg class="ev-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          <span class="ev-label">Suspect Laptop — Dell XPS</span>
+          <span class="ev-tag">ACQUIRED</span>
+        </div>
+        <div class="ev-item">
+          <svg class="ev-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+          <span class="ev-label">Samsung Galaxy S23</span>
+          <span class="ev-tag">IMAGING</span>
+        </div>
+        <div class="ev-item">
+          <svg class="ev-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <span class="ev-label">Network Logs — ISP Data</span>
+          <span class="ev-tag">ANALYSIS</span>
+        </div>
+        <div class="ev-item">
+          <svg class="ev-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+          <span class="ev-label">USB Drive — 128GB</span>
+          <span class="ev-tag">ACQUIRED</span>
+        </div>
+        <div class="ev-item">
+          <svg class="ev-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span class="ev-label">Email Threads — 847 Items</span>
+          <span class="ev-tag">REVIEW</span>
+        </div>
+        <div class="ev-item">
+          <svg class="ev-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span class="ev-label">Crypto Wallet Trace</span>
+          <span class="ev-tag">PENDING</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CERTIFICATIONS -->
+<section class="certs" id="certifications">
+  <div class="section-label">// CREDENTIALS & TRAINING</div>
+  <div class="section-title">Officer Certifications<br>& Accreditations</div>
+  <div class="divider"></div>
+
+  <div class="cert-grid">
+    <div class="cert-card">
+      <svg class="cert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+      <h4>CHFI</h4>
+      <p>Computer Hacking Forensic Investigator — EC-Council</p>
+    </div>
+    <div class="cert-card">
+      <svg class="cert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <h4>EnCE</h4>
+      <p>EnCase Certified Examiner — OpenText</p>
+    </div>
+    <div class="cert-card">
+      <svg class="cert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+      <h4>GCFE</h4>
+      <p>GIAC Certified Forensic Examiner — SANS</p>
+    </div>
+    <div class="cert-card">
+      <svg class="cert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      <h4>CDFE</h4>
+      <p>Certified Digital Forensics Examiner — Mile2</p>
+    </div>
+    <div class="cert-card">
+      <svg class="cert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      <h4>IACIS</h4>
+      <p>Int'l Assoc. of Computer Investigative Specialists</p>
+    </div>
+    <div class="cert-card">
+      <svg class="cert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+      <h4>ISO 17025</h4>
+      <p>Laboratory Competence — Digital Evidence Testing</p>
+    </div>
+    <div class="cert-card">
+      <svg class="cert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+      <h4>CCE</h4>
+      <p>Certified Computer Examiner — ISFCE</p>
+    </div>
+    <div class="cert-card">
+      <svg class="cert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      <h4>MoHA Certified</h4>
+      <p>Ministry of Home Affairs, Govt. of India approved</p>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section class="contact" id="contact">
+  <div class="section-label">// SECURE CONTACT</div>
+  <div class="section-title">Get in Touch</div>
+  <div class="divider"></div>
+  <p class="section-desc">For cybercrime complaints, inter-agency collaboration, or expert consultation — reach the Punjab Police Digital Forensics Unit directly.</p>
+
+  <div class="contact-inner">
+    <div>
+      <div class="contact-info">
+        <div class="info-block">
+          <div class="info-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <div>
+            <h5>Headquarters</h5>
+            <p>Punjab Police HQ, Sector 9, Chandigarh</p>
+            <p>Punjab, India — 160009</p>
+          </div>
+        </div>
+        <div class="info-block">
+          <div class="info-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6 6l.96-.95a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          </div>
+          <div>
+            <h5>Emergency Cyber Helpline</h5>
+            <a href="tel:1930">1930 — National Cyber Crime Helpline</a>
+            <a href="tel:112">112 — Punjab Police Emergency</a>
+          </div>
+        </div>
+        <div class="info-block">
+          <div class="info-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </div>
+          <div>
+            <h5>Email</h5>
+            <a href="mailto:cyberlab@punjabpolice.gov.in">cyberlab@punjabpolice.gov.in</a>
+            <a href="mailto:sspcyber.chd@punjabpolice.gov.in">sspcyber.chd@punjabpolice.gov.in</a>
+          </div>
+        </div>
+        <div class="info-block">
+          <div class="info-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div>
+            <h5>Operating Hours</h5>
+            <p>Control Room: 24 × 7 × 365</p>
+            <p>Office: Mon–Sat, 9:00 AM – 6:00 PM</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="contact-map">
+        <div class="map-header">// LOCATION — CHANDIGARH CYBER CELL</div>
+        <div class="map-placeholder">
+          <div class="map-pin"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <div class="contact-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="fname">First Name *</label>
+          <input type="text" id="fname" placeholder="Amarjit">
+        </div>
+        <div class="form-group">
+          <label for="lname">Last Name *</label>
+          <input type="text" id="lname" placeholder="Singh">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="email">Email Address *</label>
+        <input type="email" id="email" placeholder="example@email.com">
+      </div>
+      <div class="form-group">
+        <label for="phone">Phone Number</label>
+        <input type="tel" id="phone" placeholder="+91 98765 43210">
+      </div>
+      <div class="form-group">
+        <label for="case-type">Nature of Complaint *</label>
+        <select id="case-type">
+          <option value="" disabled selected>Select incident type</option>
+          <option>Online Financial Fraud</option>
+          <option>Cyber Harassment / Stalking</option>
+          <option>Identity Theft</option>
+          <option>Hacking / Unauthorized Access</option>
+          <option>Ransomware / Malware Attack</option>
+          <option>Social Media Fraud</option>
+          <option>Digital Evidence Request</option>
+          <option>Inter-Agency Collaboration</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="message">Incident Description *</label>
+        <textarea id="message" placeholder="Provide details of the incident — include dates, platforms involved, amounts (if financial), and any suspect information you have..."></textarea>
+      </div>
+      <div class="form-note">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        All submissions are treated as official police correspondence and handled with strict confidentiality under applicable laws.
+      </div>
+      <button class="submit-btn" onclick="handleSubmit()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Submit Complaint
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-left">
+    <div class="footer-brand">
+      <div class="footer-brand-dot"></div>
+      Punjab Police — Computer Digital Forensics Unit
+    </div>
+    <p>Government of Punjab. All information on this site is for official use. Cybercrime incidents should be reported to the National Cyber Crime Reporting Portal (cybercrime.gov.in) or call 1930.</p>
+  </div>
+  <div class="footer-right">
+    <p>© 2025 PUNJAB POLICE — ALL RIGHTS RESERVED</p>
+    <p style="margin-top:4px;">CLASSIFIED: OFFICIAL USE ONLY</p>
+    <ul class="footer-links">
+      <li><a href="#">Privacy Policy</a></li>
+      <li><a href="#">RTI</a></li>
+      <li><a href="#">Sitemap</a></li>
+      <li><a href="https://punjabpolice.gov.in" target="_blank">Official Portal</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script>
+  // Form submission feedback
+  function handleSubmit() {
+    const btn = document.querySelector('.submit-btn');
+    btn.innerHTML = `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      Complaint Submitted — Reference #CYB${Date.now().toString().slice(-6)}
+    `;
+    btn.style.background = '#00ff88';
+    btn.style.color = '#000';
+    setTimeout(() => {
+      btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Submit Complaint`;
+      btn.style.background = '';
+      btn.style.color = '';
+    }, 4000);
+  }
+
+  // Smooth nav highlight on scroll
+  const sections = document.querySelectorAll('section[id]');
+  const links = document.querySelectorAll('.nav-links a');
+  window.addEventListener('scroll', () => {
+    let cur = '';
+    sections.forEach(s => {
+      if (window.scrollY >= s.offsetTop - 120) cur = s.id;
+    });
+    links.forEach(l => {
+      l.style.color = l.getAttribute('href') === `#${cur}` ? 'var(--accent)' : '';
+    });
+  });
+</script>
+</body>
+</html>
